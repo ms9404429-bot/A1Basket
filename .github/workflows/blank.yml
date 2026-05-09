@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>A4basket - Grocery Delivery</title>
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,sans-serif;
+}
+body{
+  background:#f5fff7;
+  color:#222;
+}
+header{
+  background:#0f9d58;
+  color:white;
+  padding:20px;
+  text-align:center;
+}
+header h1{
+  font-size:28px;
+}
+header p{
+  margin-top:5px;
+  font-size:14px;
+}
+
+.filters{
+  display:flex;
+  overflow-x:auto;
+  gap:10px;
+  padding:15px;
+  background:white;
+  position:sticky;
+  top:0;
+}
+.filters button{
+  border:none;
+  padding:10px 16px;
+  border-radius:20px;
+  background:#e8f5e9;
+  cursor:pointer;
+}
+
+.products{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:15px;
+  padding:15px;
+}
+.card{
+  background:white;
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+.card img{
+  width:100%;
+  height:140px;
+  object-fit:cover;
+  border-radius:10px;
+}
+.card h3{
+  font-size:16px;
+  margin:8px 0;
+}
+.price{
+  color:#0f9d58;
+  font-weight:bold;
+}
+.card button{
+  width:100%;
+  margin-top:8px;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#0f9d58;
+  color:white;
+  cursor:pointer;
+}
+
+.cart-btn{
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  background:#0f9d58;
+  color:white;
+  border:none;
+  padding:16px;
+  border-radius:50%;
+  font-size:20px;
+  cursor:pointer;
+}
+
+.cart-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.5);
+  display:none;
+  justify-content:center;
+  align-items:center;
+}
+.cart-content{
+  background:white;
+  width:95%;
+  max-width:400px;
+  padding:20px;
+  border-radius:16px;
+  max-height:90vh;
+  overflow:auto;
+}
+.cart-item{
+  display:flex;
+  justify-content:space-between;
+  margin:10px 0;
+}
+
+.checkout-form input,
+.checkout-form textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border:1px solid #ddd;
+  border-radius:8px;
+}
+
+.checkout-form button{
+  width:100%;
+  padding:12px;
+  background:#0f9d58;
+  color:white;
+  border:none;
+  border-radius:8px;
+}
+
+.whatsapp{
+  position:fixed;
+  left:20px;
+  bottom:20px;
+  background:#25D366;
+  color:white;
+  padding:14px 18px;
+  border-radius:30px;
+  text-decoration:none;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>A4basket</h1>
+  <p>Fresh groceries and medicines delivered to your doorstep</p>
+</header>
+
+<div class="filters">
+  <button onclick="filterProducts('All')">All</button>
+  <button onclick="filterProducts('Groceries')">Groceries</button>
+  <button onclick="filterProducts('Dairy')">Dairy</button>
+  <button onclick="filterProducts('Snacks')">Snacks</button>
+  <button onclick="filterProducts('Medicines')">Medicines</button>
+</div>
+
+<div class="products" id="products"></div>
+
+<button class="cart-btn" onclick="openCart()">🛒 <span id="cartCount">0</span></button>
+
+<div class="cart-modal" id="cartModal">
+  <div class="cart-content">
+    <h2>Your Cart</h2>
+    <div id="cartItems"></div>
+    <h3>Total: ₹<span id="total">0</span></h3>
+
+    <form class="checkout-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <input type="text" name="name" placeholder="Customer Name" required>
+      <input type="tel" name="phone" placeholder="Phone Number" required>
+      <textarea name="address" placeholder="Delivery Address" required></textarea>
+      <textarea name="instructions" placeholder="Special Instructions"></textarea>
+      <input type="hidden" name="order_summary" id="orderSummary">
+      <button type="submit" onclick="prepareOrder()">Place Order</button>
+    </form>
+
+    <button onclick="closeCart()" style="margin-top:10px;width:100%">Close</button>
+  </div>
+</div>
+
+<a class="whatsapp" href="https://wa.me/919801061354" target="_blank">WhatsApp</a>
+
+<script>
+const products = [{name:"Aashirvaad Atta",price:280,category:"Groceries",img:"https://images.unsplash.com/photo-1608198093002-ad4e005484ec"},
+  {name:"Amul Butter",price:280,category:"Dairy",img:"https://images.unsplash.com/photo-1589985270958-bf0874b9db1d"},
+  {name:"Maggi",price:14,category:"Snacks",img:"https://images.unsplash.com/photo-1617093727343-374698b1b08d"},
+  {name:"Coca Cola",price:95,category:"Beverages",img:"https://images.unsplash.com/photo-1581636625402-29b2a704ef13"},
+  {name:"Paracetamol",price:30,category:"Medicines",img:"https://images.unsplash.com/photo-1587854692152-cbe660dbde88"},
+  {name:"Milk",price:60,category:"Dairy",img:"https://images.unsplash.com/photo-1550583724-b2692b85b150"},
+  {name:"Bread",price:35,category:"Groceries",img:"https://images.unsplash.com/photo-1509440159596-0249088772ff"},
+  {name:"Dettol Soap",price:45,category:"Personal Care",img:"https://images.unsplash.com/photo-1584305574647-acf2d335e4c3"}
+];
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+function renderProducts(list){
+  document.getElementById("products").innerHTML = list.map((p,i)=>
+    <div class="card">
+      <img src="${p.img}" loading="lazy">
+      <h3>${p.name}</h3>
+      <p class="price">₹${p.price}</p>
+      <button onclick="addToCart(${i})">Add to Cart</button>
+    </div>
+  ).join("");
+}
+renderProducts(products);
+
+function filterProducts(cat){
+  if(cat==="All") return renderProducts(products);
+  renderProducts(products.filter(p=>p.category===cat));
+}
+
+function addToCart(index){
+  cart.push(products[index]);
+  localStorage.setItem("cart",JSON.stringify(cart));
+  updateCart();
+}
+
+function updateCart(){
+  document.getElementById("cartCount").innerText = cart.length;
+  document.getElementById("cartItems").innerHTML = cart.map(item=>
+    <div class="cart-item">
+      <span>${item.name}</span>
+      <span>₹${item.price}</span>
+    </div>
+  ).join("");
+
+  const total = cart.reduce((sum,item)=>sum+item.price,0);
+  document.getElementById("total").innerText = total;
+}
+updateCart();
+
+function openCart(){
+  document.getElementById("cartModal").style.display="flex";
+}
+function closeCart(){
+  document.getElementById("cartModal").style.display="none";
+}
+
+function prepareOrder(){
+  let summary = cart.map(item=>${item.name} - ₹${item.price}).join(", ");
+  document.getElementById("orderSummary").value = summary;
+  localStorage.removeItem("cart");
+}
+</script>
+
+</body>
+</html>
